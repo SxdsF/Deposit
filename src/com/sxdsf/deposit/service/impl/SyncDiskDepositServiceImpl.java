@@ -1,6 +1,10 @@
 package com.sxdsf.deposit.service.impl;
 
+import java.lang.ref.Reference;
+import java.lang.ref.SoftReference;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import android.content.Context;
 import android.os.Environment;
@@ -26,7 +30,10 @@ public class SyncDiskDepositServiceImpl implements SyncDiskDepositService {
 	private final String FILE_FOLDER;
 	private final String OBB_FOLDER;
 
-	private final Map<String, FileWrapper> fileMap = new ConcurrentHashMap<>();
+	/**
+	 * 每创建一个文件，就放到这个map里，为了防止占内存，采用软引用存储
+	 */
+	private final Map<String, Reference<FileWrapper>> fileMap = new ConcurrentHashMap<>();
 
 	public SyncDiskDepositServiceImpl(Context context) {
 		CACHE_FOLDER = context.getCacheDir().getPath();
@@ -80,10 +87,12 @@ public class SyncDiskDepositServiceImpl implements SyncDiskDepositService {
 	private String create(String dirPath, String dirName) {
 		String fullPath = null;
 		FileWrapper file = new FileWrapper(dirPath, dirName);
+		Reference<FileWrapper> fileReference = new SoftReference<FileWrapper>(
+				file);
 		if (file != null && !file.exists()) {
 			if (file.mkdirs()) {
 				fullPath = file.getPath();
-				this.fileMap.put(fullPath, file);
+				this.fileMap.put(fullPath, fileReference);
 			}
 		}
 		return fullPath;
@@ -93,7 +102,7 @@ public class SyncDiskDepositServiceImpl implements SyncDiskDepositService {
 	public <T> boolean save(String root, String fileName, T value) {
 		// TODO Auto-generated method stub
 		boolean result = false;
-		FileWrapper file = this.fileMap.get(root);
+		FileWrapper file = this.getFile(root);
 		if (file != null) {
 			result = file.save(fileName, value);
 		}
@@ -104,7 +113,7 @@ public class SyncDiskDepositServiceImpl implements SyncDiskDepositService {
 	public <T> T get(String root, String fileName) {
 		// TODO Auto-generated method stub
 		T result = null;
-		FileWrapper file = this.fileMap.get(root);
+		FileWrapper file = this.getFile(root);
 		if (file != null) {
 			result = file.get(fileName);
 		}
@@ -114,17 +123,28 @@ public class SyncDiskDepositServiceImpl implements SyncDiskDepositService {
 	@Override
 	public boolean deleteAll() {
 		// TODO Auto-generated method stub
+		boolean result = false;
 		synchronized (this.fileMap) {
-			this.fileMap.clear();
+			Set<Entry<String, Reference<FileWrapper>>> set = this.fileMap
+					.entrySet();
+			if (set != null) {
+				for (Entry<String, Reference<FileWrapper>> entry : set) {
+					if (entry != null) {
+						this.deleteAll(entry.getKey(), true);
+					}
+				}
+				this.fileMap.clear();
+				result = true;
+			}
 		}
-		return true;
+		return result;
 	}
 
 	@Override
 	public boolean deleteAll(String root, boolean include) {
 		// TODO Auto-generated method stub
 		boolean result = false;
-		FileWrapper file = this.fileMap.get(root);
+		FileWrapper file = this.getFile(root);
 		if (file != null) {
 			result = file.deleteAll(include);
 			if (include) {
@@ -143,7 +163,7 @@ public class SyncDiskDepositServiceImpl implements SyncDiskDepositService {
 	public boolean delete(String root, String fileName, boolean include) {
 		// TODO Auto-generated method stub
 		boolean result = false;
-		FileWrapper file = this.fileMap.get(root);
+		FileWrapper file = this.getFile(root);
 		if (file != null) {
 			result = file.delete(fileName, include);
 		}
@@ -154,10 +174,27 @@ public class SyncDiskDepositServiceImpl implements SyncDiskDepositService {
 	public long getModifyTime(String root, String fileName) {
 		// TODO Auto-generated method stub
 		long result = 0;
-		FileWrapper file = this.fileMap.get(root);
+		FileWrapper file = this.getFile(root);
 		if (file != null) {
 			result = file.getModifyTime(fileName);
 		}
 		return result;
+	}
+
+	private FileWrapper getFile(String key) {
+		FileWrapper file = null;
+		Reference<FileWrapper> fileReference = this.fileMap.get(key);
+		if (fileReference != null) {
+			file = fileReference.get();
+			/**
+			 * 如果file取出来时null，说明被清除了，所以重新创建一个放进去
+			 */
+			if (file == null) {
+				file = new FileWrapper(key);
+				fileReference = new SoftReference<FileWrapper>(file);
+				this.fileMap.put(key, fileReference);
+			}
+		}
+		return file;
 	}
 }

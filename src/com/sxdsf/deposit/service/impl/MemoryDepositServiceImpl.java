@@ -2,219 +2,160 @@ package com.sxdsf.deposit.service.impl;
 
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import android.content.Context;
 
-import android.util.SparseArray;
+public class MemoryDepositServiceImpl implements MemoryDepositService {
 
-public class MemoryDepositServiceImpl {
+	private final Map<String, Reference<?>> mapMemoryCache = new ConcurrentHashMap<>();
+	private final Map<String, Time> saveTimeMap = new ConcurrentHashMap<>();
+	private final SyncDiskDepositService diskDepositServiceImpl;
+	private final String root;
+	private static final String DIR = "MEMORY_CACHE";
+	private static final String TIME_MAP = "timeMap";
 
-//	private final Map<String, Reference<Object>> mapMemoryCache = new HashMap<>();
-//	private final SparseArray<Reference<Object>> sparseMemoryCache = new SparseArray<>();
-//	private final Map<Object, Integer> saveTimeMap = new HashMap<>();
-//	private final SyncDiskDepositServiceImpl diskDepositServiceImpl;
-//	private static final String DIR = "MEMORY_CACHE";
-//	private static final String TIME_MAP = "timeMap";
-//
-//	/**
-//	 * 永久保存
-//	 */
-//	public static final int WILL_NOT_INVALID = -1;
-//
-//	public MemoryDepositServiceImpl() {
-//		this.diskDepositServiceImpl = new SyncDiskDepositServiceImpl(DIR);
-//		@SuppressWarnings("unchecked")
-//		Map<Object, Integer> temp = (Map<Object, Integer>) this.diskDepositServiceImpl
-//				.getCache(TIME_MAP);
-//		if (temp != null) {
-//			Set<Entry<Object, Integer>> set = temp.entrySet();
-//			if (set != null) {
-//				Iterator<Entry<Object, Integer>> it = set.iterator();
-//				if (it != null) {
-//					while (it.hasNext()) {
-//						Entry<Object, Integer> entry = it.next();
-//						if (entry != null) {
-//							Object key = entry.getKey();
-//							Integer value = entry.getValue();
-//							this.saveTimeMap.put(key, value);
-//						}
-//					}
-//				}
-//			}
-//		}
-//	}
-//
-//	/**
-//	 * 保存进cahce，时效为永久
-//	 * 
-//	 * @param key
-//	 * @param value
-//	 */
-//	public void saveInCache(String key, Object value) {
-//		this.saveInCache(key, value, WILL_NOT_INVALID);
-//	}
-//
-//	/**
-//	 * 保存进cache，有一个失效时间
-//	 * 
-//	 * @param key
-//	 * @param value
-//	 * @param saveTime
-//	 */
-//	public void saveInCache(String key, Object value, int saveTime) {
-//		SoftReference<Object> temp = new SoftReference<Object>(value);
-//		this.mapMemoryCache.put(key, temp);
-//		this.diskDepositServiceImpl.saveInCache(key, value);
-//		this.saveTimeMap.put(key, saveTime);
-//		this.diskDepositServiceImpl.saveInCache(TIME_MAP, this.saveTimeMap);
-//	}
-//
-//	/**
-//	 * 保存进cahce，时效为永久
-//	 * 
-//	 * @param key
-//	 * @param value
-//	 */
-//	public void saveInCache(int key, Object value) {
-//		this.saveInCache(key, value, WILL_NOT_INVALID);
-//	}
-//
-//	/**
-//	 * 保存进cache，有一个失效时间
-//	 * 
-//	 * @param key
-//	 * @param value
-//	 * @param saveTime
-//	 */
-//	public void saveInCache(int key, Object value, int saveTime) {
-//		SoftReference<Object> temp = new SoftReference<Object>(value);
-//		this.sparseMemoryCache.put(key, temp);
-//		this.diskDepositServiceImpl.saveInCache(key, value);
-//		this.saveTimeMap.put(key, saveTime);
-//		this.diskDepositServiceImpl.saveInCache(TIME_MAP, this.saveTimeMap);
-//	}
-//
-//	/**
-//	 * 获取缓存
-//	 * 
-//	 * @param key
-//	 * @return
-//	 */
-//	public Object getCache(String key) {
-//		Object obj = null;
-//		SoftReference<Object> temp = (SoftReference<Object>) this.mapMemoryCache
-//				.get(key);
-//
-//		long time = this.diskDepositServiceImpl.getModifyTime(key);
-//
-//		if (time != 0) {
-//			long now = System.currentTimeMillis();
-//			Integer l = this.saveTimeMap.get(key);
-//			if (l != null) {
-//				int dis = l.intValue();
-//				if (dis != WILL_NOT_INVALID) {
-//					if (!((now - time) / 1000 > dis)) {
-//						if (temp != null) {
-//							obj = temp.get();
-//						}
-//						if (obj == null) {
-//							obj = this.diskDepositServiceImpl.getCache(key);
-//							SoftReference<Object> sr = new SoftReference<Object>(
-//									obj);
-//							this.mapMemoryCache.put(key, sr);
-//						}
-//					}
-//				} else {
-//					if (temp != null) {
-//						obj = temp.get();
-//					}
-//					if (obj == null) {
-//						obj = this.diskDepositServiceImpl.getCache(key);
-//						SoftReference<Object> sr = new SoftReference<Object>(
-//								obj);
-//						this.mapMemoryCache.put(key, sr);
-//					}
-//				}
-//			}
-//		} else {
-//			if (temp != null) {
-//				obj = temp.get();
-//			}
-//		}
-//
-//		return obj;
-//	}
-//
-//	/**
-//	 * 获取缓存
-//	 * 
-//	 * @param key
-//	 * @return
-//	 */
-//	public Object getCache(int key) {
-//		Object obj = null;
-//		SoftReference<Object> temp = (SoftReference<Object>) this.sparseMemoryCache
-//				.get(key);
-//
-//		long time = this.diskDepositServiceImpl.getModifyTime(key);
-//
-//		if (time != 0) {
-//			long now = System.currentTimeMillis();
-//			Integer l = this.saveTimeMap.get(key);
-//			if (l != null) {
-//				int dis = l.intValue();
-//				if (dis != WILL_NOT_INVALID) {
-//					if (!((now - time) / 1000 > dis)) {
-//						if (temp != null) {
-//							obj = temp.get();
-//						}
-//						if (obj == null) {
-//							obj = this.diskDepositServiceImpl.getCache(key);
-//							SoftReference<Object> sr = new SoftReference<Object>(
-//									obj);
-//							this.sparseMemoryCache.put(key, sr);
-//						}
-//					}
-//				} else {
-//					if (temp != null) {
-//						obj = temp.get();
-//					}
-//					if (obj == null) {
-//						obj = this.diskDepositServiceImpl.getCache(key);
-//						SoftReference<Object> sr = new SoftReference<Object>(
-//								obj);
-//						this.sparseMemoryCache.put(key, sr);
-//					}
-//				}
-//			}
-//		} else {
-//			if (temp != null) {
-//				obj = temp.get();
-//			}
-//		}
-//
-//		return obj;
-//	}
-//
-//	/**
-//	 * 清理缓存
-//	 */
-//	public void clearCache() {
-//		this.mapMemoryCache.clear();
-//		this.sparseMemoryCache.clear();
-//		this.diskDepositServiceImpl.clearCache();
-//	}
-//
-//	public void clearCache(String key) {
-//		this.mapMemoryCache.remove(key);
-//		this.diskDepositServiceImpl.clearCache(key);
-//	}
-//
-//	public void clearCache(int key) {
-//		this.sparseMemoryCache.remove(key);
-//		this.diskDepositServiceImpl.clearCache(key);
-//	}
+	private final Time WILL_NOT_INVALID = new Time(TimeUnit.DAYS,
+			Integer.MAX_VALUE);
+
+	public MemoryDepositServiceImpl(
+			SyncDiskDepositService diskDepositServiceImpl) {
+		this.diskDepositServiceImpl = diskDepositServiceImpl;
+		/**
+		 * 默认采用本应用包下的cache文件夹来存储
+		 */
+		this.root = this.diskDepositServiceImpl.create(
+				DiskDepositType.CACHE_FOLDER, DIR);
+		@SuppressWarnings("unchecked")
+		Map<String, Time> temp = (Map<String, Time>) this.diskDepositServiceImpl
+				.get(this.root, TIME_MAP);
+		if (temp != null) {
+			Set<Entry<String, Time>> set = temp.entrySet();
+			if (set != null) {
+				Iterator<Entry<String, Time>> it = set.iterator();
+				if (it != null) {
+					while (it.hasNext()) {
+						Entry<String, Time> entry = it.next();
+						if (entry != null) {
+							String key = entry.getKey();
+							Time value = entry.getValue();
+							this.saveTimeMap.put(key, value);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	public MemoryDepositServiceImpl(Context context) {
+		this(new SyncDiskDepositServiceImpl(context));
+	}
+
+	@Override
+	public <T> boolean save(String key, T value) {
+		// TODO Auto-generated method stub
+		return this.save(key, value, TimeUnit.DAYS, Integer.MAX_VALUE);
+	}
+
+	@Override
+	public <T> boolean save(String key, T value, TimeUnit tu, int time) {
+		// TODO Auto-generated method stub
+		Reference<T> temp = new SoftReference<T>(value);
+		this.mapMemoryCache.put(key, temp);
+		boolean saveValueInDisk = this.diskDepositServiceImpl.save(this.root,
+				key, value);
+		Time t = new Time(tu, time);
+		this.saveTimeMap.put(key, t);
+		boolean saveTimeInDisk = this.diskDepositServiceImpl.save(this.root,
+				TIME_MAP, this.saveTimeMap);
+		return saveValueInDisk && saveTimeInDisk;
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public <T> T get(String key) {
+		// TODO Auto-generated method stub
+		T obj = null;
+		Reference<T> temp = (Reference<T>) this.mapMemoryCache.get(key);
+
+		long time = this.diskDepositServiceImpl.getModifyTime(this.root, key);
+
+		if (time != 0) {
+			long now = System.currentTimeMillis();
+			Time t = this.saveTimeMap.get(key);
+			if (t != null) {
+				if (!WILL_NOT_INVALID.equals(t)) {
+					long l = TimeUnit.MILLISECONDS.convert(t.time, t.tu);
+					if (!((now - time) > l)) {
+						if (temp != null) {
+							obj = temp.get();
+						}
+						if (obj == null) {
+							obj = this.diskDepositServiceImpl.get(this.root,
+									key);
+							Reference<T> sr = new SoftReference<T>(obj);
+							this.mapMemoryCache.put(key, sr);
+						}
+					}
+				} else {
+					if (temp != null) {
+						obj = temp.get();
+					}
+					if (obj == null) {
+						obj = this.diskDepositServiceImpl.get(this.root, key);
+						Reference<T> sr = new SoftReference<T>(obj);
+						this.mapMemoryCache.put(key, sr);
+					}
+				}
+			}
+		} else {
+			if (temp != null) {
+				obj = temp.get();
+			}
+		}
+
+		return obj;
+	}
+
+	@Override
+	public boolean clear(String key) {
+		// TODO Auto-generated method stub
+		this.mapMemoryCache.remove(key);
+		return this.diskDepositServiceImpl.delete(this.root, key, true);
+	}
+
+	@Override
+	public boolean clearAll() {
+		// TODO Auto-generated method stub
+		this.mapMemoryCache.clear();
+		return this.diskDepositServiceImpl.deleteAll(this.root, false);
+	}
+
+	private class Time {
+		public TimeUnit tu;
+		public int time;
+
+		public Time(TimeUnit tu, int time) {
+			this.tu = tu;
+			this.time = time;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			// TODO Auto-generated method stub
+			boolean result = false;
+			if (o != null && o instanceof Time) {
+				if (this.tu == ((Time) o).tu && this.time == ((Time) o).time) {
+					result = true;
+				}
+			}
+			return result;
+		}
+
+	}
+
 }

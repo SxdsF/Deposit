@@ -8,6 +8,12 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import com.sxdsf.deposit.dao.DiskDepositDAO;
 import com.sxdsf.deposit.dao.impl.DiskDepositDAOImpl;
 
+/**
+ * File类的包装类，包含一个成员变量file，提供基本的file操作方法，还有一个读写锁
+ * 
+ * @author sunbowen
+ * 
+ */
 public class FileWrapper implements Serializable, Comparable<FileWrapper> {
 
 	/**
