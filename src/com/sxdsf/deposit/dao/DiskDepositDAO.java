@@ -11,9 +11,9 @@ public interface DiskDepositDAO {
 
 	public <T> T get(String filePath);
 
-	public boolean delete(File file, boolean single);
+	public boolean delete(File file, boolean include);
 
-	public boolean delete(String filePath, boolean single);
+	public boolean delete(String filePath, boolean include);
 
 	public long getModifyTime(File file);
 

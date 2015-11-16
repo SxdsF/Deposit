@@ -9,8 +9,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-
 import android.util.Log;
 import com.sxdsf.deposit.dao.DiskDepositDAO;
 
@@ -24,11 +24,12 @@ public class DiskDepositDAOImpl implements DiskDepositDAO {
 		boolean success = false;
 		if (file != null && file.exists()) {
 			byte[] temp = toByteArray(value);
-			FileOutputStream outStream = null;
+			FileOutputStream out = null;
+			FileChannel outChannel = null;
 			try {
-				outStream = new FileOutputStream(file);
-				outStream.write(temp);
-				outStream.flush();
+				out = new FileOutputStream(file);
+				outChannel = out.getChannel();
+				outChannel.write(ByteBuffer.wrap(temp));
 				success = true;
 			} catch (FileNotFoundException e) {
 				// TODO Auto-generated catch block
@@ -37,9 +38,17 @@ public class DiskDepositDAOImpl implements DiskDepositDAO {
 				// TODO Auto-generated catch block
 				Log.e(TAG, e.getMessage());
 			} finally {
-				if (outStream != null) {
+				if (outChannel != null) {
 					try {
-						outStream.close();
+						outChannel.close();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						Log.e(TAG, e.getMessage());
+					}
+				}
+				if (out != null) {
+					try {
+						out.close();
 					} catch (IOException e) {
 						// TODO Auto-generated catch block
 						Log.e(TAG, e.getMessage());
@@ -67,19 +76,35 @@ public class DiskDepositDAOImpl implements DiskDepositDAO {
 		T result = null;
 		if (file != null && file.exists()) {
 			FileInputStream in = null;
+			FileChannel inChannel = null;
 			try {
-				// 一次读多个字节
-				byte[] bytes = new byte[(int) file.length()];
 				in = new FileInputStream(file);
-				in.read(bytes);
-				result = toObject(bytes);
-			} catch (Exception e) {
+				inChannel = in.getChannel();
+				// 一次读多个字节
+				ByteBuffer buff = ByteBuffer
+						.allocateDirect((int) file.length());
+				inChannel.read(buff);
+				result = toObject(buff.array());
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				Log.e(TAG, e.getMessage());
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
 				Log.e(TAG, e.getMessage());
 			} finally {
+				if (inChannel != null) {
+					try {
+						inChannel.close();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						Log.e(TAG, e.getMessage());
+					}
+				}
 				if (in != null) {
 					try {
 						in.close();
 					} catch (IOException e) {
+						// TODO Auto-generated catch block
 						Log.e(TAG, e.getMessage());
 					}
 				}
@@ -96,23 +121,23 @@ public class DiskDepositDAOImpl implements DiskDepositDAO {
 	}
 
 	@Override
-	public boolean delete(File file, boolean single) {
+	public boolean delete(File file, boolean include) {
 		// TODO Auto-generated method stub
 		// 判断目录或文件是否存在
 		boolean success = false;
 		if (file != null && file.exists()) { // 不存在返回 false
 			// 判断是否为文件
 			success = file.isFile() ? this.deleteFile(file) : this
-					.deleteDirectory(file, single);
+					.deleteDirectory(file, include);
 		}
 		return success;
 	}
 
 	@Override
-	public boolean delete(String filePath, boolean single) {
+	public boolean delete(String filePath, boolean include) {
 		// TODO Auto-generated method stub
 		File file = new File(filePath);
-		return this.delete(file, single);
+		return this.delete(file, include);
 	}
 
 	@Override
@@ -133,53 +158,58 @@ public class DiskDepositDAOImpl implements DiskDepositDAO {
 		// TODO Auto-generated method stub
 		boolean success = false;
 		if (from != null && from.exists() && to != null && to.exists()) {
-		}
-		FileInputStream fi = null;
-		FileOutputStream fo = null;
-		FileChannel in = null;
-		FileChannel out = null;
-		try {
-			fi = new FileInputStream(from);
-			fo = new FileOutputStream(to);
-			in = fi.getChannel();// 得到对应的文件通道
-			out = fo.getChannel();// 得到对应的文件通道
-			in.transferTo(0, in.size(), out);// 连接两个通道，并且从in通道读取，然后写入out通道
-			success = true;
-		} catch (IOException e) {
-			Log.e(TAG, e.getMessage());
-		} finally {
-			if (fi != null) {
-				try {
-					fi.close();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					Log.e(TAG, e.getMessage());
+			FileInputStream fi = null;
+			FileOutputStream fo = null;
+			FileChannel in = null;
+			FileChannel out = null;
+			try {
+				fi = new FileInputStream(from);
+				fo = new FileOutputStream(to);
+				in = fi.getChannel();// 得到对应的文件通道
+				out = fo.getChannel();// 得到对应的文件通道
+				in.transferTo(0, in.size(), out);// 连接两个通道，并且从in通道读取，然后写入out通道
+				success = true;
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				Log.e(TAG, e.getMessage());
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				Log.e(TAG, e.getMessage());
+			} finally {
+				if (fi != null) {
+					try {
+						fi.close();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						Log.e(TAG, e.getMessage());
+					}
+				}
+				if (in != null) {
+					try {
+						in.close();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						Log.e(TAG, e.getMessage());
+					}
+				}
+				if (fo != null) {
+					try {
+						fo.close();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						Log.e(TAG, e.getMessage());
+					}
+				}
+				if (out != null) {
+					try {
+						out.close();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						Log.e(TAG, e.getMessage());
+					}
 				}
 			}
-			if (in != null) {
-				try {
-					in.close();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					Log.e(TAG, e.getMessage());
-				}
-			}
-			if (fo != null) {
-				try {
-					fo.close();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					Log.e(TAG, e.getMessage());
-				}
-			}
-			if (out != null) {
-				try {
-					out.close();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					Log.e(TAG, e.getMessage());
-				}
-			}
+
 		}
 		return success;
 	}

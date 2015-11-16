@@ -15,7 +15,7 @@ public class MemoryDepositServiceImpl {
 //	private final Map<String, Reference<Object>> mapMemoryCache = new HashMap<>();
 //	private final SparseArray<Reference<Object>> sparseMemoryCache = new SparseArray<>();
 //	private final Map<Object, Integer> saveTimeMap = new HashMap<>();
-//	private final DiskDepositServiceImpl diskDepositServiceImpl;
+//	private final SyncDiskDepositServiceImpl diskDepositServiceImpl;
 //	private static final String DIR = "MEMORY_CACHE";
 //	private static final String TIME_MAP = "timeMap";
 //
@@ -25,7 +25,7 @@ public class MemoryDepositServiceImpl {
 //	public static final int WILL_NOT_INVALID = -1;
 //
 //	public MemoryDepositServiceImpl() {
-//		this.diskDepositServiceImpl = new DiskDepositServiceImpl(DIR);
+//		this.diskDepositServiceImpl = new SyncDiskDepositServiceImpl(DIR);
 //		@SuppressWarnings("unchecked")
 //		Map<Object, Integer> temp = (Map<Object, Integer>) this.diskDepositServiceImpl
 //				.getCache(TIME_MAP);
