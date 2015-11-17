@@ -1,4 +1,4 @@
-package com.sxdsf.deposit.service.impl;
+package com.sxdsf.deposit.service.disk.impl;
 
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
@@ -6,6 +6,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import com.sxdsf.deposit.service.ServiceMode;
+import com.sxdsf.deposit.service.disk.DiskDepositMode;
+import com.sxdsf.deposit.service.disk.DiskDepositType;
+import com.sxdsf.deposit.service.disk.SyncDiskDepositService;
+
 import android.content.Context;
 import android.os.Environment;
 
@@ -196,5 +202,17 @@ public class SyncDiskDepositServiceImpl implements SyncDiskDepositService {
 			}
 		}
 		return file;
+	}
+
+	@Override
+	public ServiceMode getServiceMode() {
+		// TODO Auto-generated method stub
+		return ServiceMode.DISK;
+	}
+
+	@Override
+	public DiskDepositMode getDiskDepositMode() {
+		// TODO Auto-generated method stub
+		return DiskDepositMode.SYNC;
 	}
 }

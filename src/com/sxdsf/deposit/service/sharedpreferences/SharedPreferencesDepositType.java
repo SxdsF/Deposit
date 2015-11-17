@@ -1,4 +1,4 @@
-package com.sxdsf.deposit.service.impl;
+package com.sxdsf.deposit.service.sharedpreferences;
 
 public enum SharedPreferencesDepositType {
 	STRING, BOOLEAN, INTEGER, FLOAT, LONG, STRINGSET;

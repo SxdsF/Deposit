@@ -1,14 +1,17 @@
-package com.sxdsf.deposit.service.impl;
+package com.sxdsf.deposit.service.disk.impl;
 
 import java.lang.ref.SoftReference;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import android.content.Context;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import com.sxdsf.deposit.service.ServiceMode;
+import com.sxdsf.deposit.service.disk.AsyncDiskDepositService;
+import com.sxdsf.deposit.service.disk.DiskDepositMode;
+import com.sxdsf.deposit.service.disk.DiskDepositType;
 
 public class AsyncDiskDepositServiceImpl implements AsyncDiskDepositService {
 
@@ -207,6 +210,18 @@ public class AsyncDiskDepositServiceImpl implements AsyncDiskDepositService {
 		public static final int GETMODIFYTIME = 5;
 
 		private int messageCode;
+	}
+
+	@Override
+	public ServiceMode getServiceMode() {
+		// TODO Auto-generated method stub
+		return ServiceMode.DISK;
+	}
+
+	@Override
+	public DiskDepositMode getDiskDepositMode() {
+		// TODO Auto-generated method stub
+		return DiskDepositMode.ASYNC;
 	}
 
 }

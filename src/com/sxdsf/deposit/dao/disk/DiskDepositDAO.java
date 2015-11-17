@@ -1,4 +1,4 @@
-package com.sxdsf.deposit.dao;
+package com.sxdsf.deposit.dao.disk;
 
 import java.io.File;
 

@@ -1,4 +1,4 @@
-package com.sxdsf.deposit.service.impl;
+package com.sxdsf.deposit.service.disk;
 
 public enum DiskDepositType {
 	// "/data"

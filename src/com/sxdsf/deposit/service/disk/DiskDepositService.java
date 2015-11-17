@@ -1,6 +1,8 @@
-package com.sxdsf.deposit.service.impl;
+package com.sxdsf.deposit.service.disk;
 
-public interface DiskDepositService {
+import com.sxdsf.deposit.service.DepositService;
+
+public interface DiskDepositService extends DepositService {
 
 	/**
 	 * 创建一个目录
@@ -76,4 +78,11 @@ public interface DiskDepositService {
 	 * @return
 	 */
 	public long getModifyTime(String root, String fileName);
+
+	/**
+	 * 获取disk存储的操作模式，SYNC或者ASYNC
+	 * 
+	 * @return
+	 */
+	public DiskDepositMode getDiskDepositMode();
 }

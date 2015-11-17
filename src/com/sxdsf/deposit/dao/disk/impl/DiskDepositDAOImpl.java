@@ -1,4 +1,4 @@
-package com.sxdsf.deposit.dao.impl;
+package com.sxdsf.deposit.dao.disk.impl;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -12,7 +12,8 @@ import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import android.util.Log;
-import com.sxdsf.deposit.dao.DiskDepositDAO;
+
+import com.sxdsf.deposit.dao.disk.DiskDepositDAO;
 
 public class DiskDepositDAOImpl implements DiskDepositDAO {
 

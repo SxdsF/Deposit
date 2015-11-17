@@ -1,12 +1,13 @@
-package com.sxdsf.deposit.service.impl;
+package com.sxdsf.deposit.service.disk.impl;
 
 import java.io.File;
 import java.io.Serializable;
 import java.net.URI;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import com.sxdsf.deposit.dao.DiskDepositDAO;
-import com.sxdsf.deposit.dao.impl.DiskDepositDAOImpl;
+
+import com.sxdsf.deposit.dao.disk.DiskDepositDAO;
+import com.sxdsf.deposit.dao.disk.impl.DiskDepositDAOImpl;
 
 /**
  * File类的包装类，包含一个成员变量file，提供基本的file操作方法，还有一个读写锁

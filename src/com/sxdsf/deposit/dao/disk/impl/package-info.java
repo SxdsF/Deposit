@@ -5,4 +5,4 @@
  * @author sunbowen
  *
  */
-package com.sxdsf.deposit.dao.impl;
+package com.sxdsf.deposit.dao.disk.impl;
