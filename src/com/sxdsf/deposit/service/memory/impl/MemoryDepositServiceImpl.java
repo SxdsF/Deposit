@@ -1,5 +1,6 @@
 package com.sxdsf.deposit.service.memory.impl;
 
+import java.io.File;
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
 import java.util.Iterator;
@@ -17,15 +18,35 @@ import android.content.Context;
 
 public class MemoryDepositServiceImpl implements MemoryDepositService {
 
-	private final Map<String, Reference<?>> mapMemoryCache = new ConcurrentHashMap<>();
-	private final Map<String, Time> saveTimeMap = new ConcurrentHashMap<>();
-	private final SyncDiskDepositService diskDepositServiceImpl;
 	private final String root;
 	private static final String DIR = "MEMORY_CACHE";
-	private static final String TIME_MAP = "timeMap";
+	private final SyncDiskDepositService diskDepositServiceImpl;
 
+	/**
+	 * key类型为string的相关变量
+	 */
+	private final Map<String, Reference<?>> stringMapMemoryCache = new ConcurrentHashMap<>();
+	private final Map<String, Time> stringSaveTimeMap = new ConcurrentHashMap<>();
+	private static final String KEY_STRING = "KEY_STRING";
+	private static final String STRING_TIME_MAP = "stringTimeMap";
+
+	/**
+	 * key类型为int的相关变量
+	 */
+	private final Map<Integer, Reference<?>> intMapMemoryCache = new ConcurrentHashMap<>();
+	private final Map<Integer, Time> intSaveTimeMap = new ConcurrentHashMap<>();
+	private static final String KEY_INT = "KEY_INT";
+	private static final String INT_TIME_MAP = "intTimeMap";
+
+	/**
+	 * 永久性存储的默认time值
+	 */
 	private final Time WILL_NOT_INVALID = new Time(TimeUnit.DAYS,
 			Integer.MAX_VALUE);
+
+	public MemoryDepositServiceImpl(Context context) {
+		this(new SyncDiskDepositServiceImpl(context));
+	}
 
 	public MemoryDepositServiceImpl(
 			SyncDiskDepositService diskDepositServiceImpl) {
@@ -36,10 +57,10 @@ public class MemoryDepositServiceImpl implements MemoryDepositService {
 		this.root = this.diskDepositServiceImpl.create(
 				DiskDepositType.CACHE_FOLDER, DIR);
 		@SuppressWarnings("unchecked")
-		Map<String, Time> temp = (Map<String, Time>) this.diskDepositServiceImpl
-				.get(this.root, TIME_MAP);
-		if (temp != null) {
-			Set<Entry<String, Time>> set = temp.entrySet();
+		Map<String, Time> stringTimeMap = (Map<String, Time>) this.diskDepositServiceImpl
+				.get(this.root, STRING_TIME_MAP);
+		if (stringTimeMap != null) {
+			Set<Entry<String, Time>> set = stringTimeMap.entrySet();
 			if (set != null) {
 				Iterator<Entry<String, Time>> it = set.iterator();
 				if (it != null) {
@@ -48,7 +69,26 @@ public class MemoryDepositServiceImpl implements MemoryDepositService {
 						if (entry != null) {
 							String key = entry.getKey();
 							Time value = entry.getValue();
-							this.saveTimeMap.put(key, value);
+							this.stringSaveTimeMap.put(key, value);
+						}
+					}
+				}
+			}
+		}
+		@SuppressWarnings("unchecked")
+		Map<Integer, Time> intTimeMap = (Map<Integer, Time>) this.diskDepositServiceImpl
+				.get(this.root, INT_TIME_MAP);
+		if (intTimeMap != null) {
+			Set<Entry<Integer, Time>> set = intTimeMap.entrySet();
+			if (set != null) {
+				Iterator<Entry<Integer, Time>> it = set.iterator();
+				if (it != null) {
+					while (it.hasNext()) {
+						Entry<Integer, Time> entry = it.next();
+						if (entry != null) {
+							int key = entry.getKey();
+							Time value = entry.getValue();
+							this.intSaveTimeMap.put(key, value);
 						}
 					}
 				}
@@ -56,17 +96,178 @@ public class MemoryDepositServiceImpl implements MemoryDepositService {
 		}
 	}
 
-	public MemoryDepositServiceImpl(Context context) {
-		this(new SyncDiskDepositServiceImpl(context));
-	}
-
 	@Override
 	public boolean clearAll() {
 		// TODO Auto-generated method stub
-		this.mapMemoryCache.clear();
+		this.stringMapMemoryCache.clear();
+		this.intMapMemoryCache.clear();
 		return this.diskDepositServiceImpl.deleteAll(this.root, false);
 	}
 
+	@Override
+	public ServiceMode getServiceMode() {
+		// TODO Auto-generated method stub
+		return ServiceMode.MEMORY;
+	}
+
+	@Override
+	public <V> boolean save(String key, V value) {
+		// TODO Auto-generated method stub
+		return this.save(key, value, TimeUnit.DAYS, Integer.MAX_VALUE);
+	}
+
+	@Override
+	public <V> boolean save(String key, V value, TimeUnit tu, int time) {
+		// TODO Auto-generated method stub
+		Reference<V> temp = new SoftReference<V>(value);
+		this.stringMapMemoryCache.put(key, temp);
+		boolean saveValueInDisk = this.diskDepositServiceImpl.save(this.root,
+				this.generateStringKey(key), value);
+		Time t = new Time(tu, time);
+		this.stringSaveTimeMap.put(key, t);
+		boolean saveTimeInDisk = this.diskDepositServiceImpl.save(this.root,
+				STRING_TIME_MAP, this.stringSaveTimeMap);
+		return saveValueInDisk && saveTimeInDisk;
+	}
+
+	@Override
+	public <V> V get(String key) {
+		// TODO Auto-generated method stub
+		V obj = null;
+		@SuppressWarnings("unchecked")
+		Reference<V> temp = (Reference<V>) this.stringMapMemoryCache.get(key);
+
+		long time = this.diskDepositServiceImpl.getModifyTime(this.root,
+				this.generateStringKey(key));
+
+		if (time != 0) {
+			long now = System.currentTimeMillis();
+			Time t = this.stringSaveTimeMap.get(key);
+			if (t != null) {
+				if (!WILL_NOT_INVALID.equals(t)) {
+					long l = TimeUnit.MILLISECONDS.convert(t.time, t.tu);
+					if (!((now - time) > l)) {
+						if (temp != null) {
+							obj = temp.get();
+						}
+						if (obj == null) {
+							obj = this.diskDepositServiceImpl.get(this.root,
+									this.generateStringKey(key));
+							Reference<V> sr = new SoftReference<V>(obj);
+							this.stringMapMemoryCache.put(key, sr);
+						}
+					}
+				} else {
+					if (temp != null) {
+						obj = temp.get();
+					}
+					if (obj == null) {
+						obj = this.diskDepositServiceImpl.get(this.root,
+								this.generateStringKey(key));
+						Reference<V> sr = new SoftReference<V>(obj);
+						this.stringMapMemoryCache.put(key, sr);
+					}
+				}
+			}
+		} else {
+			if (temp != null) {
+				obj = temp.get();
+			}
+		}
+
+		return obj;
+	}
+
+	@Override
+	public boolean clear(String key) {
+		// TODO Auto-generated method stub
+		this.stringMapMemoryCache.remove(key);
+		return this.diskDepositServiceImpl.delete(this.root,
+				this.generateStringKey(key), true);
+	}
+
+	@Override
+	public <V> boolean save(int key, V value) {
+		// TODO Auto-generated method stub
+		return this.save(key, value, TimeUnit.DAYS, Integer.MAX_VALUE);
+	}
+
+	@Override
+	public <V> boolean save(int key, V value, TimeUnit tu, int time) {
+		// TODO Auto-generated method stub
+		Reference<V> temp = new SoftReference<V>(value);
+		this.intMapMemoryCache.put(key, temp);
+		boolean saveValueInDisk = this.diskDepositServiceImpl.save(this.root,
+				this.generateIntKey(key), value);
+		Time t = new Time(tu, time);
+		this.intSaveTimeMap.put(key, t);
+		boolean saveTimeInDisk = this.diskDepositServiceImpl.save(this.root,
+				INT_TIME_MAP, this.intSaveTimeMap);
+		return saveValueInDisk && saveTimeInDisk;
+	}
+
+	@Override
+	public <V> V get(int key) {
+		// TODO Auto-generated method stub
+		V obj = null;
+		@SuppressWarnings("unchecked")
+		Reference<V> temp = (Reference<V>) this.intMapMemoryCache.get(key);
+
+		long time = this.diskDepositServiceImpl.getModifyTime(this.root,
+				this.generateIntKey(key));
+
+		if (time != 0) {
+			long now = System.currentTimeMillis();
+			Time t = this.intSaveTimeMap.get(key);
+			if (t != null) {
+				if (!WILL_NOT_INVALID.equals(t)) {
+					long l = TimeUnit.MILLISECONDS.convert(t.time, t.tu);
+					if (!((now - time) > l)) {
+						if (temp != null) {
+							obj = temp.get();
+						}
+						if (obj == null) {
+							obj = this.diskDepositServiceImpl.get(this.root,
+									this.generateIntKey(key));
+							Reference<V> sr = new SoftReference<V>(obj);
+							this.intMapMemoryCache.put(key, sr);
+						}
+					}
+				} else {
+					if (temp != null) {
+						obj = temp.get();
+					}
+					if (obj == null) {
+						obj = this.diskDepositServiceImpl.get(this.root,
+								this.generateIntKey(key));
+						Reference<V> sr = new SoftReference<V>(obj);
+						this.intMapMemoryCache.put(key, sr);
+					}
+				}
+			}
+		} else {
+			if (temp != null) {
+				obj = temp.get();
+			}
+		}
+
+		return obj;
+	}
+
+	@Override
+	public boolean clear(int key) {
+		// TODO Auto-generated method stub
+		this.intMapMemoryCache.remove(key);
+		return this.diskDepositServiceImpl.delete(this.root,
+				this.generateIntKey(key), true);
+	}
+
+	/**
+	 * 时间存储的基本类型
+	 * 
+	 * @author sunbowen
+	 * 
+	 */
 	private class Time {
 		public TimeUnit tu;
 		public int time;
@@ -90,87 +291,12 @@ public class MemoryDepositServiceImpl implements MemoryDepositService {
 
 	}
 
-	@Override
-	public ServiceMode getServiceMode() {
-		// TODO Auto-generated method stub
-		return ServiceMode.MEMORY;
+	private String generateStringKey(String key) {
+		return KEY_STRING + File.separator + key;
 	}
 
-	@Override
-	public <K, V> boolean save(K key, V value) {
-		// TODO Auto-generated method stub
-		return this.save(key, value, TimeUnit.DAYS, Integer.MAX_VALUE);
-	}
-
-	@Override
-	public <K, V> boolean save(K key, V value, TimeUnit tu, int time) {
-		// TODO Auto-generated method stub
-		Reference<V> temp = new SoftReference<V>(value);
-		this.mapMemoryCache.put(key.toString(), temp);
-		boolean saveValueInDisk = this.diskDepositServiceImpl.save(this.root,
-				key.toString(), value);
-		Time t = new Time(tu, time);
-		this.saveTimeMap.put(key.toString(), t);
-		boolean saveTimeInDisk = this.diskDepositServiceImpl.save(this.root,
-				TIME_MAP, this.saveTimeMap);
-		return saveValueInDisk && saveTimeInDisk;
-	}
-
-	@Override
-	public <K, V> V get(K key) {
-		// TODO Auto-generated method stub
-		V obj = null;
-		@SuppressWarnings("unchecked")
-		Reference<V> temp = (Reference<V>) this.mapMemoryCache.get(key
-				.toString());
-
-		long time = this.diskDepositServiceImpl.getModifyTime(this.root,
-				key.toString());
-
-		if (time != 0) {
-			long now = System.currentTimeMillis();
-			Time t = this.saveTimeMap.get(key);
-			if (t != null) {
-				if (!WILL_NOT_INVALID.equals(t)) {
-					long l = TimeUnit.MILLISECONDS.convert(t.time, t.tu);
-					if (!((now - time) > l)) {
-						if (temp != null) {
-							obj = temp.get();
-						}
-						if (obj == null) {
-							obj = this.diskDepositServiceImpl.get(this.root,
-									key.toString());
-							Reference<V> sr = new SoftReference<V>(obj);
-							this.mapMemoryCache.put(key.toString(), sr);
-						}
-					}
-				} else {
-					if (temp != null) {
-						obj = temp.get();
-					}
-					if (obj == null) {
-						obj = this.diskDepositServiceImpl.get(this.root,
-								key.toString());
-						Reference<V> sr = new SoftReference<V>(obj);
-						this.mapMemoryCache.put(key.toString(), sr);
-					}
-				}
-			}
-		} else {
-			if (temp != null) {
-				obj = temp.get();
-			}
-		}
-
-		return obj;
-	}
-
-	@Override
-	public <K> boolean clear(K key) {
-		// TODO Auto-generated method stub
-		this.mapMemoryCache.remove(key);
-		return this.diskDepositServiceImpl.delete(this.root, key.toString(),
-				true);
+	private String generateIntKey(int key) {
+		return KEY_INT + File.separator + key;
 	}
 
 }
