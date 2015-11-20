@@ -1,5 +1,5 @@
 package com.sxdsf.deposit.service.sharedpreferences;
 
-public enum SharedPreferencesDepositType {
+public enum SharedPreferencesType {
 	STRING, BOOLEAN, INTEGER, FLOAT, LONG, STRINGSET;
 }

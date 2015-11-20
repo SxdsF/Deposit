@@ -6,16 +6,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import android.content.Context;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import com.sxdsf.deposit.service.ServiceMode;
-import com.sxdsf.deposit.service.sharedpreferences.SharedPreferencesDepositService;
+import com.sxdsf.deposit.service.sharedpreferences.SharedPreferencesService;
 
-public class SharedPreferencesDepositServiceImpl implements
-		SharedPreferencesDepositService {
+public class SharedPreferencesServiceImpl implements
+		SharedPreferencesService {
 
 	// 20151114 sunbowen 用来保存每个对应存储的SharedPreferences，其中key为文件名
 	private final Map<String, SharedPreferencesWrapper> sharedPreferencesMap = new ConcurrentHashMap<>();
 	private final Context context;
 
-	public SharedPreferencesDepositServiceImpl(Context context) {
+	public SharedPreferencesServiceImpl(Context context) {
 		this.context = context;
 	}
 

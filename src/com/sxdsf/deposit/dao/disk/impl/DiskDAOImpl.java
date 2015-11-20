@@ -13,11 +13,11 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import android.util.Log;
 
-import com.sxdsf.deposit.dao.disk.DiskDepositDAO;
+import com.sxdsf.deposit.dao.disk.DiskDAO;
 
-public class DiskDepositDAOImpl implements DiskDepositDAO {
+public class DiskDAOImpl implements DiskDAO {
 
-	private static final String TAG = "DiskDepositDAOImpl";
+	private static final String TAG = "DiskDAOImpl";
 
 	@Override
 	public <T> boolean save(File file, T value) {
@@ -306,11 +306,10 @@ public class DiskDepositDAOImpl implements DiskDepositDAO {
 	/**
 	 * 删除单个文件
 	 * 
-	 * @param sPath
-	 *            被删除文件的文件名
-	 * @return 单个文件删除成功返回true，否则返回false
+	 * @param file
+	 * @return
 	 */
-	public boolean deleteFile(File file) {
+	private boolean deleteFile(File file) {
 		boolean flag = false;
 		// 路径为文件且不为空则进行删除
 		if (file != null && file.isFile() && file.exists()) {
@@ -320,13 +319,13 @@ public class DiskDepositDAOImpl implements DiskDepositDAO {
 	}
 
 	/**
-	 * 删除目录（文件夹）以及目录下的文件
+	 * 删除目录以及目录下的文件
 	 * 
-	 * @param sPath
-	 *            被删除目录的文件路径
-	 * @return 目录删除成功返回true，否则返回false
+	 * @param dirFile
+	 * @param include
+	 * @return
 	 */
-	public boolean deleteDirectory(File dirFile, boolean include) {
+	private boolean deleteDirectory(File dirFile, boolean include) {
 		boolean flag = false;
 		if (dirFile != null) {
 			// 如果sPath不以文件分隔符结尾，自动添加文件分隔符

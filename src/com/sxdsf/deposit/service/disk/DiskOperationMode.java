@@ -1,5 +1,5 @@
 package com.sxdsf.deposit.service.disk;
 
-public enum DiskDepositMode {
+public enum DiskOperationMode {
 	SYNC, ASYNC;
 }

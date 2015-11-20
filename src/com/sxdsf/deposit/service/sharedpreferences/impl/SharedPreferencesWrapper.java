@@ -3,7 +3,7 @@ package com.sxdsf.deposit.service.sharedpreferences.impl;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import com.sxdsf.deposit.service.sharedpreferences.SharedPreferencesDepositType;
+import com.sxdsf.deposit.service.sharedpreferences.SharedPreferencesType;
 import android.annotation.SuppressLint;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
@@ -77,7 +77,7 @@ public final class SharedPreferencesWrapper {
 	@SuppressLint("CommitPrefEdits")
 	@SuppressWarnings("unchecked")
 	public <T> SharedPreferencesWrapper save(String key, T value,
-			SharedPreferencesDepositType type) {
+			SharedPreferencesType type) {
 		Editor e = this.edit();
 		if (e != null) {
 			switch (type) {

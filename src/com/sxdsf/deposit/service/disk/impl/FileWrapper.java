@@ -6,8 +6,8 @@ import java.net.URI;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import com.sxdsf.deposit.dao.disk.DiskDepositDAO;
-import com.sxdsf.deposit.dao.disk.impl.DiskDepositDAOImpl;
+import com.sxdsf.deposit.dao.disk.DiskDAO;
+import com.sxdsf.deposit.dao.disk.impl.DiskDAOImpl;
 
 /**
  * File类的包装类，包含一个成员变量file，提供基本的file操作方法，还有一个读写锁
@@ -24,7 +24,7 @@ public class FileWrapper implements Serializable, Comparable<FileWrapper> {
 
 	private final File file;
 	private final ReadWriteLock rwl = new ReentrantReadWriteLock();
-	private final DiskDepositDAO diskDao = new DiskDepositDAOImpl();
+	private final DiskDAO diskDao = new DiskDAOImpl();
 
 	public FileWrapper(File dir, String name) {
 		this.file = new File(dir, name);

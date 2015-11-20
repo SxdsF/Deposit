@@ -6,11 +6,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
 import com.sxdsf.deposit.service.ServiceMode;
-import com.sxdsf.deposit.service.disk.DiskDepositMode;
-import com.sxdsf.deposit.service.disk.DiskDepositType;
-import com.sxdsf.deposit.service.disk.SyncDiskDepositService;
+import com.sxdsf.deposit.service.disk.DiskOperationMode;
+import com.sxdsf.deposit.service.disk.DiskType;
+import com.sxdsf.deposit.service.disk.SyncDiskService;
+import com.sxdsf.deposit.service.disk.read.ReadService;
+import com.sxdsf.deposit.service.disk.write.WriteService;
 
 import android.content.Context;
 import android.os.Environment;
@@ -21,7 +22,7 @@ import android.os.Environment;
  * @author sunbowen
  * 
  */
-public class SyncDiskDepositServiceImpl implements SyncDiskDepositService {
+public class SyncDiskServiceImpl implements SyncDiskService {
 
 	public static final String DATA_FOLDER = Environment.getDataDirectory()
 			.getPath();
@@ -41,7 +42,7 @@ public class SyncDiskDepositServiceImpl implements SyncDiskDepositService {
 	 */
 	private final Map<String, Reference<FileWrapper>> fileMap = new ConcurrentHashMap<>();
 
-	public SyncDiskDepositServiceImpl(Context context) {
+	public SyncDiskServiceImpl(Context context) {
 		CACHE_FOLDER = context.getCacheDir().getPath();
 		EXTERNAL_CACHE_FOLDER = context.getExternalCacheDir().getPath();
 		FILE_FOLDER = context.getFilesDir().getPath();
@@ -50,7 +51,7 @@ public class SyncDiskDepositServiceImpl implements SyncDiskDepositService {
 	}
 
 	@Override
-	public String create(DiskDepositType type, String dirName) {
+	public String create(DiskType type, String dirName) {
 		// TODO Auto-generated method stub
 		String fullPath = null;
 		if (dirName != null) {
@@ -130,6 +131,7 @@ public class SyncDiskDepositServiceImpl implements SyncDiskDepositService {
 	public boolean deleteAll() {
 		// TODO Auto-generated method stub
 		boolean result = false;
+		// 20151120 sunbowen 在此需要保证系列操作的原子性
 		synchronized (this.fileMap) {
 			Set<Entry<String, Reference<FileWrapper>>> set = this.fileMap
 					.entrySet();
@@ -155,10 +157,8 @@ public class SyncDiskDepositServiceImpl implements SyncDiskDepositService {
 			result = file.deleteAll(include);
 			if (include) {
 				boolean clear = false;
-				synchronized (this.fileMap) {
-					this.fileMap.remove(root);
-					clear = true;
-				}
+				this.fileMap.remove(root);
+				clear = true;
 				result = result && clear;
 			}
 		}
@@ -189,16 +189,21 @@ public class SyncDiskDepositServiceImpl implements SyncDiskDepositService {
 
 	private FileWrapper getFile(String key) {
 		FileWrapper file = null;
-		Reference<FileWrapper> fileReference = this.fileMap.get(key);
-		if (fileReference != null) {
-			file = fileReference.get();
-			/**
-			 * 如果file取出来时null，说明被清除了，所以重新创建一个放进去
-			 */
-			if (file == null) {
-				file = new FileWrapper(key);
-				fileReference = new SoftReference<FileWrapper>(file);
-				this.fileMap.put(key, fileReference);
+		// 20151120 sunbowen 保证put和get两个操作一起原子性的执行
+		synchronized (this.fileMap) {
+			if (!this.fileMap.isEmpty()) {
+				Reference<FileWrapper> fileReference = this.fileMap.get(key);
+				if (fileReference != null) {
+					file = fileReference.get();
+					/**
+					 * 如果file取出来时null，说明被清除了，所以重新创建一个放进去
+					 */
+					if (file == null) {
+						file = new FileWrapper(key);
+						fileReference = new SoftReference<FileWrapper>(file);
+						this.fileMap.put(key, fileReference);
+					}
+				}
 			}
 		}
 		return file;
@@ -211,8 +216,20 @@ public class SyncDiskDepositServiceImpl implements SyncDiskDepositService {
 	}
 
 	@Override
-	public DiskDepositMode getDiskDepositMode() {
+	public DiskOperationMode getDiskDepositMode() {
 		// TODO Auto-generated method stub
-		return DiskDepositMode.SYNC;
+		return DiskOperationMode.SYNC;
+	}
+
+	@Override
+	public ReadService read(DiskOperationMode mode) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public WriteService write(DiskOperationMode mode) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

@@ -3,17 +3,19 @@ package com.sxdsf.deposit.service.disk.impl;
 import java.lang.ref.SoftReference;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import android.content.Context;
 import android.os.Environment;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.Message;
 import com.sxdsf.deposit.service.ServiceMode;
-import com.sxdsf.deposit.service.disk.AsyncDiskDepositService;
-import com.sxdsf.deposit.service.disk.DiskDepositMode;
-import com.sxdsf.deposit.service.disk.DiskDepositType;
+import com.sxdsf.deposit.service.disk.AsyncDiskService;
+import com.sxdsf.deposit.service.disk.DiskOperationMode;
+import com.sxdsf.deposit.service.disk.DiskType;
+import com.sxdsf.deposit.service.disk.read.ReadService;
+import com.sxdsf.deposit.service.disk.write.WriteService;
 
-public class AsyncDiskDepositServiceImpl implements AsyncDiskDepositService {
+public class SyncReadAsyncWriteDiskServiceImpl implements
+		AsyncDiskService {
 
 	public static final String DATA_FOLDER = Environment.getDataDirectory()
 			.getPath();
@@ -29,11 +31,10 @@ public class AsyncDiskDepositServiceImpl implements AsyncDiskDepositService {
 	private final String OBB_FOLDER;
 
 	private final Map<String, FileWrapper> fileMap = new ConcurrentHashMap<>();
-	private final Thread mThread = new LoopThread(this);
-	private Looper looper;
-	private Handler handler;
+	private final ExecutorService executorService = Executors
+			.newSingleThreadExecutor();
 
-	public AsyncDiskDepositServiceImpl(Context context) {
+	public SyncReadAsyncWriteDiskServiceImpl(Context context) {
 		CACHE_FOLDER = context.getCacheDir().getPath();
 		EXTERNAL_CACHE_FOLDER = context.getExternalCacheDir().getPath();
 		FILE_FOLDER = context.getFilesDir().getPath();
@@ -42,7 +43,7 @@ public class AsyncDiskDepositServiceImpl implements AsyncDiskDepositService {
 	}
 
 	@Override
-	public String create(DiskDepositType type, String dirName) {
+	public String create(DiskType type, String dirName) {
 		// TODO Auto-generated method stub
 		String fullPath = null;
 		if (dirName != null) {
@@ -131,85 +132,9 @@ public class AsyncDiskDepositServiceImpl implements AsyncDiskDepositService {
 	}
 
 	@Override
-	public void init() {
-		// TODO Auto-generated method stub
-		this.mThread.start();
-	}
-
-	@Override
 	public void close() {
 		// TODO Auto-generated method stub
-		this.mThread.interrupt();
-	}
-
-	private void sentEvent() {
-	}
-
-	private void handleMessage() {
-	}
-
-	private static class LoopThread extends Thread {
-
-		private SoftReference<AsyncDiskDepositService> reference;
-
-		private LoopThread(AsyncDiskDepositService reference) {
-			this.reference = new SoftReference<AsyncDiskDepositService>(
-					reference);
-		}
-
-		@Override
-		public void run() {
-			// TODO Auto-generated method stub
-			Looper.prepare();
-			if (this.reference != null) {
-				AsyncDiskDepositServiceImpl aReference = (AsyncDiskDepositServiceImpl) this.reference
-						.get();
-				if (aReference != null) {
-					aReference.looper = Looper.myLooper();
-					aReference.handler = new FileOperationHandler(
-							Looper.myLooper(), aReference);
-				}
-			}
-			Looper.loop();
-		}
-
-	}
-
-	private static class FileOperationHandler extends Handler {
-
-		private SoftReference<AsyncDiskDepositService> reference;
-
-		public FileOperationHandler(Looper looper,
-				AsyncDiskDepositService reference) {
-			super(looper);
-			// TODO Auto-generated constructor stub
-			this.reference = new SoftReference<AsyncDiskDepositService>(
-					reference);
-		}
-
-		@Override
-		public void handleMessage(Message msg) {
-			// TODO Auto-generated method stub
-			if (this.reference != null) {
-				AsyncDiskDepositServiceImpl aReference = (AsyncDiskDepositServiceImpl) this.reference
-						.get();
-				if (aReference != null) {
-
-				}
-			}
-		}
-
-	}
-
-	private class Event {
-		public static final int SAVE = 0;
-		public static final int GET = 1;
-		public static final int DELETEALL = 2;
-		public static final int DELETEALL_WITH_PARAMS = 3;
-		public static final int DELETE = 4;
-		public static final int GETMODIFYTIME = 5;
-
-		private int messageCode;
+		this.executorService.shutdown();
 	}
 
 	@Override
@@ -219,9 +144,21 @@ public class AsyncDiskDepositServiceImpl implements AsyncDiskDepositService {
 	}
 
 	@Override
-	public DiskDepositMode getDiskDepositMode() {
+	public DiskOperationMode getDiskDepositMode() {
 		// TODO Auto-generated method stub
-		return DiskDepositMode.ASYNC;
+		return DiskOperationMode.ASYNC;
+	}
+
+	@Override
+	public ReadService read(DiskOperationMode mode) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public WriteService write(DiskOperationMode mode) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

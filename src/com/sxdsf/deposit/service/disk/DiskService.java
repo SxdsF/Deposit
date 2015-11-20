@@ -1,8 +1,10 @@
 package com.sxdsf.deposit.service.disk;
 
 import com.sxdsf.deposit.service.DepositService;
+import com.sxdsf.deposit.service.disk.read.ReadService;
+import com.sxdsf.deposit.service.disk.write.WriteService;
 
-public interface DiskDepositService extends DepositService {
+public interface DiskService extends DepositService {
 
 	/**
 	 * 创建一个目录
@@ -13,7 +15,7 @@ public interface DiskDepositService extends DepositService {
 	 *            目录的名字
 	 * @return 创建好的目录的完整路径
 	 */
-	public String create(DiskDepositType type, String dirName);
+	public String create(DiskType type, String dirName);
 
 	/**
 	 * 将指定值存入指定路径的指定文件里
@@ -84,5 +86,9 @@ public interface DiskDepositService extends DepositService {
 	 * 
 	 * @return
 	 */
-	public DiskDepositMode getDiskDepositMode();
+	public DiskOperationMode getDiskDepositMode();
+
+	public ReadService read(DiskOperationMode mode);
+
+	public WriteService write(DiskOperationMode mode);
 }

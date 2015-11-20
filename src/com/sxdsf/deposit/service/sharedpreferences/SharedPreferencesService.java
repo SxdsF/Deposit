@@ -6,7 +6,7 @@ import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import com.sxdsf.deposit.service.DepositService;
 import com.sxdsf.deposit.service.sharedpreferences.impl.SharedPreferencesWrapper;
 
-public interface SharedPreferencesDepositService extends DepositService {
+public interface SharedPreferencesService extends DepositService {
 
 	public void create(String fileName, int mode);
 

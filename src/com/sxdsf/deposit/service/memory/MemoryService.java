@@ -9,7 +9,7 @@ import com.sxdsf.deposit.service.DepositService;
  * @author sunbowen
  * 
  */
-public interface MemoryDepositService extends DepositService {
+public interface MemoryService extends DepositService {
 
 	/**
 	 * 将一个值永久性存入
@@ -45,7 +45,7 @@ public interface MemoryDepositService extends DepositService {
 	 * @param key
 	 * @return
 	 */
-	public boolean clear(String key);
+	public boolean remove(String key);
 
 	/**
 	 * 将一个值永久性存入
@@ -81,12 +81,12 @@ public interface MemoryDepositService extends DepositService {
 	 * @param key
 	 * @return
 	 */
-	public boolean clear(int key);
+	public boolean remove(int key);
 
 	/**
 	 * 清除所有存入的值
 	 * 
 	 * @return
 	 */
-	public boolean clearAll();
+	public boolean clear();
 }
