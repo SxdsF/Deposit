@@ -28,7 +28,7 @@ public interface DiskService extends DepositService {
 	 *            存入值
 	 * @return 存入是否成功
 	 */
-	public <T extends Object> boolean save(String root, String fileName, T value);
+	public <T> boolean save(String root, String fileName, T value);
 
 	/**
 	 * 根据指定路径和指定文件返回文件里的内容
@@ -39,7 +39,7 @@ public interface DiskService extends DepositService {
 	 *            文件名
 	 * @return 文件里的内容
 	 */
-	public <T extends Object> T get(String root, String fileName);
+	public <T> T get(String root, String fileName);
 
 	/**
 	 * 删除该服务下所有存储的文件
