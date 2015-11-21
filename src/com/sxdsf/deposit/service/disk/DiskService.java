@@ -1,94 +1,20 @@
 package com.sxdsf.deposit.service.disk;
 
 import com.sxdsf.deposit.service.DepositService;
-import com.sxdsf.deposit.service.disk.read.ReadService;
-import com.sxdsf.deposit.service.disk.write.WriteService;
+import com.sxdsf.deposit.service.disk.read.AsyncDiskReadService;
+import com.sxdsf.deposit.service.disk.read.SyncDiskReadService;
+import com.sxdsf.deposit.service.disk.write.AsyncDiskWriteService;
+import com.sxdsf.deposit.service.disk.write.SyncDiskWriteService;
 
 public interface DiskService extends DepositService {
 
-	/**
-	 * 创建一个目录
-	 * 
-	 * @param type
-	 *            目录的根目录类型
-	 * @param dirName
-	 *            目录的名字
-	 * @return 创建好的目录的完整路径
-	 */
-	public String create(DiskType type, String dirName);
+	public String create(DiskFolder type, String dirName);
 
-	/**
-	 * 将指定值存入指定路径的指定文件里
-	 * 
-	 * @param root
-	 *            根路径
-	 * @param fileName
-	 *            文件名
-	 * @param value
-	 *            存入值
-	 * @return 存入是否成功
-	 */
-	public <T> boolean save(String root, String fileName, T value);
+	public AsyncDiskReadService asyncRead();
 
-	/**
-	 * 根据指定路径和指定文件返回文件里的内容
-	 * 
-	 * @param root
-	 *            根路径
-	 * @param fileName
-	 *            文件名
-	 * @return 文件里的内容
-	 */
-	public <T> T get(String root, String fileName);
+	public SyncDiskReadService syncRead();
 
-	/**
-	 * 删除该服务下所有存储的文件
-	 * 
-	 * @return
-	 */
-	public boolean deleteAll();
+	public AsyncDiskWriteService asyncWrite();
 
-	/**
-	 * 删除指定路径下的文件
-	 * 
-	 * @param root
-	 *            根路径
-	 * @param include
-	 *            是否连本文件夹一起删除
-	 * @return
-	 */
-	public boolean deleteAll(String root, boolean include);
-
-	/**
-	 * 根据指定路径指定文件名删除
-	 * 
-	 * @param root
-	 *            根路径
-	 * @param fileName
-	 *            文件名
-	 * @param include
-	 *            是否连本文件夹一起删除
-	 * @return
-	 */
-	public boolean delete(String root, String fileName, boolean include);
-
-	/**
-	 * 根据指定路径和指定文件名获取其修改时间
-	 * 
-	 * @param root
-	 * @param fileName
-	 * @return
-	 */
-	public long getModifyTime(String root, String fileName);
-
-	/**
-	 * 获取disk存储的操作模式，SYNC或者ASYNC
-	 * 
-	 * @return
-	 */
-	public DiskOperationMode getDiskDepositMode();
-
-	public ReadService read(DiskOperationMode mode);
-
-	public WriteService write(DiskOperationMode mode);
+	public SyncDiskWriteService syncWrite();
 }

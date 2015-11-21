@@ -1,7 +1,10 @@
 package com.sxdsf.deposit.service.memory;
 
-import java.util.concurrent.TimeUnit;
 import com.sxdsf.deposit.service.DepositService;
+import com.sxdsf.deposit.service.memory.read.AsyncMemoryReadService;
+import com.sxdsf.deposit.service.memory.read.SyncMemoryReadService;
+import com.sxdsf.deposit.service.memory.write.AsyncMemoryWriteService;
+import com.sxdsf.deposit.service.memory.write.SyncMemoryWriteService;
 
 /**
  * 面向运存的服务，以key-value的形式，key的类型为String和int，value可以为任意类型
@@ -10,83 +13,11 @@ import com.sxdsf.deposit.service.DepositService;
  * 
  */
 public interface MemoryService extends DepositService {
+	public AsyncMemoryReadService asyncRead();
 
-	/**
-	 * 将一个值永久性存入
-	 * 
-	 * @param key
-	 * @param value
-	 * @return
-	 */
-	public <V> boolean save(String key, V value);
+	public SyncMemoryReadService syncRead();
 
-	/**
-	 * 将一个值存入，并赋予一个时间期限
-	 * 
-	 * @param key
-	 * @param value
-	 * @param tu
-	 * @param time
-	 * @return
-	 */
-	public <V> boolean save(String key, V value, TimeUnit tu, int time);
+	public AsyncMemoryWriteService asyncWrite();
 
-	/**
-	 * 根据key取出值
-	 * 
-	 * @param key
-	 * @return
-	 */
-	public <V> V get(String key);
-
-	/**
-	 * 清除该key的值
-	 * 
-	 * @param key
-	 * @return
-	 */
-	public boolean remove(String key);
-
-	/**
-	 * 将一个值永久性存入
-	 * 
-	 * @param key
-	 * @param value
-	 * @return
-	 */
-	public <V> boolean save(int key, V value);
-
-	/**
-	 * 将一个值存入，并赋予一个时间期限
-	 * 
-	 * @param key
-	 * @param value
-	 * @param tu
-	 * @param time
-	 * @return
-	 */
-	public <V> boolean save(int key, V value, TimeUnit tu, int time);
-
-	/**
-	 * 根据key取出值
-	 * 
-	 * @param key
-	 * @return
-	 */
-	public <V> V get(int key);
-
-	/**
-	 * 清除该key的值
-	 * 
-	 * @param key
-	 * @return
-	 */
-	public boolean remove(int key);
-
-	/**
-	 * 清除所有存入的值
-	 * 
-	 * @return
-	 */
-	public boolean clear();
+	public SyncMemoryWriteService syncWrite();
 }

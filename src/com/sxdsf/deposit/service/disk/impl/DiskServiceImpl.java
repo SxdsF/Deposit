@@ -1,5 +1,6 @@
 package com.sxdsf.deposit.service.disk.impl;
 
+import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -8,14 +9,18 @@ import java.util.concurrent.Executors;
 import android.content.Context;
 import android.os.Environment;
 import com.sxdsf.deposit.service.ServiceMode;
-import com.sxdsf.deposit.service.disk.AsyncDiskService;
-import com.sxdsf.deposit.service.disk.DiskOperationMode;
-import com.sxdsf.deposit.service.disk.DiskType;
-import com.sxdsf.deposit.service.disk.read.ReadService;
-import com.sxdsf.deposit.service.disk.write.WriteService;
+import com.sxdsf.deposit.service.disk.DiskService;
+import com.sxdsf.deposit.service.disk.DiskFolder;
+import com.sxdsf.deposit.service.disk.read.AsyncDiskReadService;
+import com.sxdsf.deposit.service.disk.read.SyncDiskReadService;
+import com.sxdsf.deposit.service.disk.read.impl.AsyncDiskReadServiceImpl;
+import com.sxdsf.deposit.service.disk.read.impl.SyncDiskReadServiceImpl;
+import com.sxdsf.deposit.service.disk.write.AsyncDiskWriteService;
+import com.sxdsf.deposit.service.disk.write.SyncDiskWriteService;
+import com.sxdsf.deposit.service.disk.write.impl.AsyncDiskWriteServiceImpl;
+import com.sxdsf.deposit.service.disk.write.impl.SyncDiskWriteServiceImpl;
 
-public class SyncReadAsyncWriteDiskServiceImpl implements
-		AsyncDiskService {
+public class DiskServiceImpl implements DiskService {
 
 	public static final String DATA_FOLDER = Environment.getDataDirectory()
 			.getPath();
@@ -30,11 +35,23 @@ public class SyncReadAsyncWriteDiskServiceImpl implements
 	private final String FILE_FOLDER;
 	private final String OBB_FOLDER;
 
-	private final Map<String, FileWrapper> fileMap = new ConcurrentHashMap<>();
+	/**
+	 * 每创建一个文件，就放到这个map里，为了防止占内存，采用软引用存储
+	 */
+	private final Map<String, Reference<FileWrapper>> fileMap = new ConcurrentHashMap<>();
 	private final ExecutorService executorService = Executors
 			.newSingleThreadExecutor();
 
-	public SyncReadAsyncWriteDiskServiceImpl(Context context) {
+	private final SyncDiskReadService syncRead = new SyncDiskReadServiceImpl(
+			this.fileMap);
+	private final AsyncDiskReadService asyncRead = new AsyncDiskReadServiceImpl(
+			this.fileMap, this.executorService);
+	private final SyncDiskWriteService syncWrite = new SyncDiskWriteServiceImpl(
+			this.fileMap);
+	private final AsyncDiskWriteService asyncWrite = new AsyncDiskWriteServiceImpl(
+			this.fileMap, this.executorService);
+
+	public DiskServiceImpl(Context context) {
 		CACHE_FOLDER = context.getCacheDir().getPath();
 		EXTERNAL_CACHE_FOLDER = context.getExternalCacheDir().getPath();
 		FILE_FOLDER = context.getFilesDir().getPath();
@@ -43,7 +60,37 @@ public class SyncReadAsyncWriteDiskServiceImpl implements
 	}
 
 	@Override
-	public String create(DiskType type, String dirName) {
+	public ServiceMode getServiceMode() {
+		// TODO Auto-generated method stub
+		return ServiceMode.DISK;
+	}
+
+	@Override
+	public AsyncDiskReadService asyncRead() {
+		// TODO Auto-generated method stub
+		return this.asyncRead;
+	}
+
+	@Override
+	public SyncDiskReadService syncRead() {
+		// TODO Auto-generated method stub
+		return this.syncRead;
+	}
+
+	@Override
+	public AsyncDiskWriteService asyncWrite() {
+		// TODO Auto-generated method stub
+		return this.asyncWrite;
+	}
+
+	@Override
+	public SyncDiskWriteService syncWrite() {
+		// TODO Auto-generated method stub
+		return this.syncWrite;
+	}
+
+	@Override
+	public String create(DiskFolder type, String dirName) {
 		// TODO Auto-generated method stub
 		String fullPath = null;
 		if (dirName != null) {
@@ -86,79 +133,15 @@ public class SyncReadAsyncWriteDiskServiceImpl implements
 	private String create(String dirPath, String dirName) {
 		String fullPath = null;
 		FileWrapper file = new FileWrapper(dirPath, dirName);
+		Reference<FileWrapper> fileReference = new SoftReference<FileWrapper>(
+				file);
 		if (file != null && !file.exists()) {
 			if (file.mkdirs()) {
 				fullPath = file.getPath();
-				this.fileMap.put(fullPath, file);
+				this.fileMap.put(fullPath, fileReference);
 			}
 		}
 		return fullPath;
-	}
-
-	@Override
-	public <T> boolean save(String root, String fileName, T value) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public <T> T get(String root, String fileName) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public boolean deleteAll() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean deleteAll(String root, boolean include) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean delete(String root, String fileName, boolean single) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public long getModifyTime(String root, String fileName) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public void close() {
-		// TODO Auto-generated method stub
-		this.executorService.shutdown();
-	}
-
-	@Override
-	public ServiceMode getServiceMode() {
-		// TODO Auto-generated method stub
-		return ServiceMode.DISK;
-	}
-
-	@Override
-	public DiskOperationMode getDiskDepositMode() {
-		// TODO Auto-generated method stub
-		return DiskOperationMode.ASYNC;
-	}
-
-	@Override
-	public ReadService read(DiskOperationMode mode) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public WriteService write(DiskOperationMode mode) {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 }

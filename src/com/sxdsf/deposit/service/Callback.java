@@ -1,4 +1,4 @@
-package com.sxdsf.deposit.service.disk;
+package com.sxdsf.deposit.service;
 
 public interface Callback<T> {
 

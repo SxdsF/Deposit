@@ -1,6 +1,6 @@
 package com.sxdsf.deposit.service.disk;
 
-public enum DiskType {
+public enum DiskFolder {
 	// "/data"
 	DATA_FOLDER,
 	// "/cache"

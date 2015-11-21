@@ -1,64 +1,66 @@
 package com.sxdsf.deposit.service.memory.impl;
 
-import java.io.File;
-import java.lang.ref.Reference;
-import java.lang.ref.SoftReference;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import com.sxdsf.deposit.service.ServiceMode;
-import com.sxdsf.deposit.service.disk.DiskType;
-import com.sxdsf.deposit.service.disk.SyncDiskService;
-import com.sxdsf.deposit.service.disk.impl.SyncDiskServiceImpl;
-import com.sxdsf.deposit.service.memory.MemoryService;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import android.content.Context;
+import com.sxdsf.deposit.service.ServiceMode;
+import com.sxdsf.deposit.service.disk.DiskFolder;
+import com.sxdsf.deposit.service.disk.DiskService;
+import com.sxdsf.deposit.service.disk.impl.DiskServiceImpl;
+import com.sxdsf.deposit.service.memory.MemorySave;
+import com.sxdsf.deposit.service.memory.MemoryService;
+import com.sxdsf.deposit.service.memory.Time;
+import com.sxdsf.deposit.service.memory.read.AsyncMemoryReadService;
+import com.sxdsf.deposit.service.memory.read.SyncMemoryReadService;
+import com.sxdsf.deposit.service.memory.read.impl.AsyncMemoryReadServiceImpl;
+import com.sxdsf.deposit.service.memory.read.impl.SyncMemoryReadServiceImpl;
+import com.sxdsf.deposit.service.memory.write.AsyncMemoryWriteService;
+import com.sxdsf.deposit.service.memory.write.SyncMemoryWriteService;
+import com.sxdsf.deposit.service.memory.write.impl.AsyncMemoryWriteServiceImpl;
+import com.sxdsf.deposit.service.memory.write.impl.SyncMemoryWriteServiceImpl;
 
 public class MemoryServiceImpl implements MemoryService {
 
 	private final String root;
 	private static final String DIR = "MEMORY_CACHE";
-	private final SyncDiskService diskDepositServiceImpl;
+	private final String KEY_STRING = "KEY_STRING";
+	private final String STRING_TIME_MAP = "stringTimeMap";
+	private final String KEY_INT = "KEY_INT";
+	private final String INT_TIME_MAP = "intTimeMap";
+	private final DiskService diskService;
+	private final MemorySave<String> stringMemorySave;
+	private final MemorySave<Integer> intMemorySave;
 
-	/**
-	 * key类型为string的相关变量
-	 */
-	private final Map<String, Reference<?>> stringMapMemoryCache = new ConcurrentHashMap<>();
-	private final Map<String, Time> stringSaveTimeMap = new ConcurrentHashMap<>();
-	private static final String KEY_STRING = "KEY_STRING";
-	private static final String STRING_TIME_MAP = "stringTimeMap";
+	private final ExecutorService executorService = Executors
+			.newSingleThreadExecutor();
 
-	/**
-	 * key类型为int的相关变量
-	 */
-	private final Map<Integer, Reference<?>> intMapMemoryCache = new ConcurrentHashMap<>();
-	private final Map<Integer, Time> intSaveTimeMap = new ConcurrentHashMap<>();
-	private static final String KEY_INT = "KEY_INT";
-	private static final String INT_TIME_MAP = "intTimeMap";
-
-	/**
-	 * 永久性存储的默认time值
-	 */
-	private final Time WILL_NOT_INVALID = new Time(TimeUnit.DAYS,
-			Integer.MAX_VALUE);
+	private final SyncMemoryReadService syncMemoryReadService;
+	private final AsyncMemoryReadService asyncMemoryReadService;
+	private final SyncMemoryWriteService syncMemoryWriteService;
+	private final AsyncMemoryWriteService asyncMemoryWriteService;
 
 	public MemoryServiceImpl(Context context) {
-		this(new SyncDiskServiceImpl(context));
+		this(new DiskServiceImpl(context));
 	}
 
-	public MemoryServiceImpl(
-			SyncDiskService diskDepositServiceImpl) {
-		this.diskDepositServiceImpl = diskDepositServiceImpl;
+	public MemoryServiceImpl(DiskService diskServiceImpl) {
+		this.diskService = diskServiceImpl;
 		/**
 		 * 默认采用本应用包下的cache文件夹来存储
 		 */
-		this.root = this.diskDepositServiceImpl.create(
-				DiskType.CACHE_FOLDER, DIR);
+		this.root = this.diskService.create(DiskFolder.CACHE_FOLDER, DIR);
+		this.stringMemorySave = new MemorySave<String>(this.root, KEY_STRING,
+				STRING_TIME_MAP);
+		this.intMemorySave = new MemorySave<Integer>(this.root, KEY_INT,
+				INT_TIME_MAP);
 		@SuppressWarnings("unchecked")
-		Map<String, Time> stringTimeMap = (Map<String, Time>) this.diskDepositServiceImpl
-				.get(this.root, STRING_TIME_MAP);
+		Map<String, Time> stringTimeMap = (Map<String, Time>) this.diskService
+				.syncRead().get(this.stringMemorySave.root,
+						this.stringMemorySave.saveTimeMapFileName);
 		if (stringTimeMap != null) {
 			Set<Entry<String, Time>> set = stringTimeMap.entrySet();
 			if (set != null) {
@@ -69,15 +71,16 @@ public class MemoryServiceImpl implements MemoryService {
 						if (entry != null) {
 							String key = entry.getKey();
 							Time value = entry.getValue();
-							this.stringSaveTimeMap.put(key, value);
+							this.stringMemorySave.saveTimeMap.put(key, value);
 						}
 					}
 				}
 			}
 		}
 		@SuppressWarnings("unchecked")
-		Map<Integer, Time> intTimeMap = (Map<Integer, Time>) this.diskDepositServiceImpl
-				.get(this.root, INT_TIME_MAP);
+		Map<Integer, Time> intTimeMap = (Map<Integer, Time>) this.diskService
+				.syncRead().get(this.intMemorySave.root,
+						this.intMemorySave.saveTimeMapFileName);
 		if (intTimeMap != null) {
 			Set<Entry<Integer, Time>> set = intTimeMap.entrySet();
 			if (set != null) {
@@ -88,195 +91,22 @@ public class MemoryServiceImpl implements MemoryService {
 						if (entry != null) {
 							int key = entry.getKey();
 							Time value = entry.getValue();
-							this.intSaveTimeMap.put(key, value);
+							this.intMemorySave.saveTimeMap.put(key, value);
 						}
 					}
 				}
 			}
 		}
-	}
-
-	@Override
-	public <V> boolean save(String key, V value) {
-		// TODO Auto-generated method stub
-		return this.save(key, value, TimeUnit.DAYS, Integer.MAX_VALUE);
-	}
-
-	@Override
-	public <V> boolean save(String key, V value, TimeUnit tu, int time) {
-		// TODO Auto-generated method stub
-		Reference<V> temp = new SoftReference<V>(value);
-		boolean saveValueInDisk = false;
-		boolean saveTimeInDisk = false;
-		synchronized (this) {
-			this.stringMapMemoryCache.put(key, temp);
-			saveValueInDisk = this.diskDepositServiceImpl.save(this.root,
-					this.generateStringKey(key), value);
-			Time t = new Time(tu, time);
-			this.stringSaveTimeMap.put(key, t);
-			saveTimeInDisk = this.diskDepositServiceImpl.save(this.root,
-					STRING_TIME_MAP, this.stringSaveTimeMap);
-		}
-		return saveValueInDisk && saveTimeInDisk;
-	}
-
-	@Override
-	public <V> V get(String key) {
-		// TODO Auto-generated method stub
-		V obj = null;
-		synchronized (this) {
-			@SuppressWarnings("unchecked")
-			Reference<V> temp = (Reference<V>) this.stringMapMemoryCache
-					.get(key);
-
-			long time = this.diskDepositServiceImpl.getModifyTime(this.root,
-					this.generateStringKey(key));
-
-			if (time != 0) {
-				long now = System.currentTimeMillis();
-				Time t = this.stringSaveTimeMap.get(key);
-				if (t != null) {
-					if (!WILL_NOT_INVALID.equals(t)) {
-						long l = TimeUnit.MILLISECONDS.convert(t.time, t.tu);
-						if (!((now - time) > l)) {
-							if (temp != null) {
-								obj = temp.get();
-							}
-							if (obj == null) {
-								obj = this.diskDepositServiceImpl.get(
-										this.root, this.generateStringKey(key));
-								Reference<V> sr = new SoftReference<V>(obj);
-								this.stringMapMemoryCache.put(key, sr);
-							}
-						}
-					} else {
-						if (temp != null) {
-							obj = temp.get();
-						}
-						if (obj == null) {
-							obj = this.diskDepositServiceImpl.get(this.root,
-									this.generateStringKey(key));
-							Reference<V> sr = new SoftReference<V>(obj);
-							this.stringMapMemoryCache.put(key, sr);
-						}
-					}
-				}
-			} else {
-				if (temp != null) {
-					obj = temp.get();
-				}
-			}
-		}
-		return obj;
-	}
-
-	@Override
-	public boolean remove(String key) {
-		// TODO Auto-generated method stub
-		boolean result = false;
-		synchronized (this) {
-			this.stringMapMemoryCache.remove(key);
-			result = this.diskDepositServiceImpl.delete(this.root,
-					this.generateStringKey(key), true);
-		}
-		return result;
-	}
-
-	@Override
-	public <V> boolean save(int key, V value) {
-		// TODO Auto-generated method stub
-		return this.save(key, value, TimeUnit.DAYS, Integer.MAX_VALUE);
-	}
-
-	@Override
-	public <V> boolean save(int key, V value, TimeUnit tu, int time) {
-		// TODO Auto-generated method stub
-		Reference<V> temp = new SoftReference<V>(value);
-		boolean saveValueInDisk = false;
-		boolean saveTimeInDisk = false;
-		synchronized (this) {
-			this.intMapMemoryCache.put(key, temp);
-			saveValueInDisk = this.diskDepositServiceImpl.save(this.root,
-					this.generateIntKey(key), value);
-			Time t = new Time(tu, time);
-			this.intSaveTimeMap.put(key, t);
-			saveTimeInDisk = this.diskDepositServiceImpl.save(this.root,
-					INT_TIME_MAP, this.intSaveTimeMap);
-		}
-		return saveValueInDisk && saveTimeInDisk;
-	}
-
-	@Override
-	public <V> V get(int key) {
-		// TODO Auto-generated method stub
-		V obj = null;
-		synchronized (this) {
-			@SuppressWarnings("unchecked")
-			Reference<V> temp = (Reference<V>) this.intMapMemoryCache.get(key);
-
-			long time = this.diskDepositServiceImpl.getModifyTime(this.root,
-					this.generateIntKey(key));
-
-			if (time != 0) {
-				long now = System.currentTimeMillis();
-				Time t = this.intSaveTimeMap.get(key);
-				if (t != null) {
-					if (!WILL_NOT_INVALID.equals(t)) {
-						long l = TimeUnit.MILLISECONDS.convert(t.time, t.tu);
-						if (!((now - time) > l)) {
-							if (temp != null) {
-								obj = temp.get();
-							}
-							if (obj == null) {
-								obj = this.diskDepositServiceImpl.get(
-										this.root, this.generateIntKey(key));
-								Reference<V> sr = new SoftReference<V>(obj);
-								this.intMapMemoryCache.put(key, sr);
-							}
-						}
-					} else {
-						if (temp != null) {
-							obj = temp.get();
-						}
-						if (obj == null) {
-							obj = this.diskDepositServiceImpl.get(this.root,
-									this.generateIntKey(key));
-							Reference<V> sr = new SoftReference<V>(obj);
-							this.intMapMemoryCache.put(key, sr);
-						}
-					}
-				}
-			} else {
-				if (temp != null) {
-					obj = temp.get();
-				}
-			}
-		}
-		return obj;
-	}
-
-	@Override
-	public boolean remove(int key) {
-		// TODO Auto-generated method stub
-		boolean result = false;
-		synchronized (this) {
-			this.intMapMemoryCache.remove(key);
-			result = this.diskDepositServiceImpl.delete(this.root,
-					this.generateIntKey(key), true);
-		}
-		return result;
-	}
-
-	@Override
-	public boolean clear() {
-		// TODO Auto-generated method stub
-		boolean result = false;
-		synchronized (this) {
-			this.stringMapMemoryCache.clear();
-			this.intMapMemoryCache.clear();
-			result = this.diskDepositServiceImpl.deleteAll(this.root, false);
-		}
-		return result;
+		this.syncMemoryReadService = new SyncMemoryReadServiceImpl(
+				this.diskService, this.stringMemorySave, this.intMemorySave);
+		this.asyncMemoryReadService = new AsyncMemoryReadServiceImpl(
+				this.diskService, this.stringMemorySave, this.intMemorySave,
+				this.executorService);
+		this.syncMemoryWriteService = new SyncMemoryWriteServiceImpl(
+				this.diskService, this.stringMemorySave, this.intMemorySave);
+		this.asyncMemoryWriteService = new AsyncMemoryWriteServiceImpl(
+				this.diskService, this.stringMemorySave, this.intMemorySave,
+				this.executorService);
 	}
 
 	@Override
@@ -285,41 +115,28 @@ public class MemoryServiceImpl implements MemoryService {
 		return ServiceMode.MEMORY;
 	}
 
-	/**
-	 * 时间存储的基本类型
-	 * 
-	 * @author sunbowen
-	 * 
-	 */
-	private class Time {
-		public TimeUnit tu;
-		public int time;
-
-		public Time(TimeUnit tu, int time) {
-			this.tu = tu;
-			this.time = time;
-		}
-
-		@Override
-		public boolean equals(Object o) {
-			// TODO Auto-generated method stub
-			boolean result = false;
-			if (o != null && o instanceof Time) {
-				if (this.tu == ((Time) o).tu && this.time == ((Time) o).time) {
-					result = true;
-				}
-			}
-			return result;
-		}
-
+	@Override
+	public AsyncMemoryReadService asyncRead() {
+		// TODO Auto-generated method stub
+		return this.asyncMemoryReadService;
 	}
 
-	private String generateStringKey(String key) {
-		return KEY_STRING + File.separator + key;
+	@Override
+	public SyncMemoryReadService syncRead() {
+		// TODO Auto-generated method stub
+		return this.syncMemoryReadService;
 	}
 
-	private String generateIntKey(int key) {
-		return KEY_INT + File.separator + key;
+	@Override
+	public AsyncMemoryWriteService asyncWrite() {
+		// TODO Auto-generated method stub
+		return this.asyncMemoryWriteService;
+	}
+
+	@Override
+	public SyncMemoryWriteService syncWrite() {
+		// TODO Auto-generated method stub
+		return this.syncMemoryWriteService;
 	}
 
 }
