@@ -1,165 +1,125 @@
 package com.sxdsf.deposit.service.sharedpreferences.impl;
 
-import android.annotation.SuppressLint;
 import android.content.SharedPreferences;
-import android.content.SharedPreferences.Editor;
-import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
+import android.support.annotation.Nullable;
 
-import com.sxdsf.deposit.service.sharedpreferences.SharedPreferencesType;
-
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-public final class SharedPreferencesWrapper {
+public final class SharedPreferencesWrapper implements SharedPreferences {
 
-	private final SharedPreferences sharedPreferences;
+    private final SharedPreferences sharedPreferences;
 
-	public SharedPreferencesWrapper(SharedPreferences sharedPreferences) {
-		this.sharedPreferences = sharedPreferences;
-	}
+    public SharedPreferencesWrapper(SharedPreferences sharedPreferences) {
+        this.sharedPreferences = sharedPreferences;
+    }
 
-	protected boolean contains(String arg0) {
-		// TODO Auto-generated method stub
-		return this.sharedPreferences.contains(arg0);
-	}
+    //    @SuppressLint("CommitPrefEdits")
+    //    @SuppressWarnings("unchecked")
+    //    public <T> SharedPreferencesWrapper save(String key, T value,
+    //                                             SharedPreferencesType type) {
+    //        Editor e = this.edit();
+    //        if (e != null) {
+    //            switch (type) {
+    //                case BOOLEAN:
+    //                    if (value != null && value.getClass() == Boolean.class) {
+    //                        e.putBoolean(key, (Boolean) value).commit();
+    //                    }
+    //                    break;
+    //                case FLOAT:
+    //                    if (value != null && value.getClass() == Float.class) {
+    //                        e.putFloat(key, (Float) value).commit();
+    //                    }
+    //                    break;
+    //                case INTEGER:
+    //                    if (value != null && value.getClass() == Integer.class) {
+    //                        e.putInt(key, (Integer) value).commit();
+    //                    }
+    //                    break;
+    //                case LONG:
+    //                    if (value != null && value.getClass() == Long.class) {
+    //                        e.putLong(key, (Long) value).commit();
+    //                    }
+    //                    break;
+    //                case STRING:
+    //                    if (value != null && value.getClass() == String.class) {
+    //                        e.putString(key, (String) value).commit();
+    //                    }
+    //
+    //                    break;
+    //                case STRINGSET:
+    //                    if (value != null && value.getClass() == Set.class) {
+    //                        Set<?> set = (Set<?>) value;
+    //                        if (!set.isEmpty()) {
+    //                            Iterator<?> it = set.iterator();
+    //                            if (it != null && it.next() != null
+    //                                    && it.next().getClass() == String.class) {
+    //                                e.putStringSet(key, (Set<String>) value).commit();
+    //                            }
+    //                        }
+    //                    }
+    //                    break;
+    //                default:
+    //                    break;
+    //            }
+    //        }
+    //        return this;
+    //    }
 
-	protected Editor edit() {
-		// TODO Auto-generated method stub
-		return this.sharedPreferences.edit();
-	}
+    @Override
+    public Map<String, ?> getAll() {
+        return this.sharedPreferences.getAll();
+    }
 
-	protected Map<String, ?> getAll() {
-		// TODO Auto-generated method stub
-		return this.sharedPreferences.getAll();
-	}
+    @Nullable
+    @Override
+    public String getString(String key, String defValue) {
+        return this.sharedPreferences.getString(key, defValue);
+    }
 
-	protected boolean getBoolean(String arg0, boolean arg1) {
-		// TODO Auto-generated method stub
-		return this.sharedPreferences.getBoolean(arg0, arg1);
-	}
+    @Nullable
+    @Override
+    public Set<String> getStringSet(String key, Set<String> defValues) {
+        return this.sharedPreferences.getStringSet(key, defValues);
+    }
 
-	protected float getFloat(String arg0, float arg1) {
-		// TODO Auto-generated method stub
-		return this.sharedPreferences.getFloat(arg0, arg1);
-	}
+    @Override
+    public int getInt(String key, int defValue) {
+        return this.sharedPreferences.getInt(key, defValue);
+    }
 
-	protected int getInt(String arg0, int arg1) {
-		// TODO Auto-generated method stub
-		return this.sharedPreferences.getInt(arg0, arg1);
-	}
+    @Override
+    public long getLong(String key, long defValue) {
+        return this.sharedPreferences.getLong(key, defValue);
+    }
 
-	protected long getLong(String arg0, long arg1) {
-		// TODO Auto-generated method stub
-		return this.sharedPreferences.getLong(arg0, arg1);
-	}
+    @Override
+    public float getFloat(String key, float defValue) {
+        return this.sharedPreferences.getFloat(key, defValue);
+    }
 
-	protected String getString(String arg0, String arg1) {
-		// TODO Auto-generated method stub
-		return this.sharedPreferences.getString(arg0, arg1);
-	}
+    @Override
+    public boolean getBoolean(String key, boolean defValue) {
+        return this.sharedPreferences.getBoolean(key, defValue);
+    }
 
-	protected Set<String> getStringSet(String arg0, Set<String> arg1) {
-		// TODO Auto-generated method stub
-		return this.sharedPreferences.getStringSet(arg0, arg1);
-	}
+    @Override
+    public boolean contains(String key) {
+        return this.sharedPreferences.contains(key);
+    }
 
-	protected void registerOnSharedPreferenceChangeListener(
-			OnSharedPreferenceChangeListener arg0) {
-		// TODO Auto-generated method stub
-		this.sharedPreferences.registerOnSharedPreferenceChangeListener(arg0);
-	}
+    @Override
+    public Editor edit() {
+        return this.sharedPreferences.edit();
+    }
 
-	protected void unregisterOnSharedPreferenceChangeListener(
-			OnSharedPreferenceChangeListener arg0) {
-		// TODO Auto-generated method stub
-		this.sharedPreferences.unregisterOnSharedPreferenceChangeListener(arg0);
-	}
+    @Override
+    public void registerOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener listener) {
+        this.sharedPreferences.registerOnSharedPreferenceChangeListener(listener);
+    }
 
-	@SuppressLint("CommitPrefEdits")
-	@SuppressWarnings("unchecked")
-	public <T> SharedPreferencesWrapper save(String key, T value,
-			SharedPreferencesType type) {
-		Editor e = this.edit();
-		if (e != null) {
-			switch (type) {
-			case BOOLEAN:
-				if (value != null && value.getClass() == Boolean.class) {
-					e.putBoolean(key, (Boolean) value).commit();
-				}
-				break;
-			case FLOAT:
-				if (value != null && value.getClass() == Float.class) {
-					e.putFloat(key, (Float) value).commit();
-				}
-				break;
-			case INTEGER:
-				if (value != null && value.getClass() == Integer.class) {
-					e.putInt(key, (Integer) value).commit();
-				}
-				break;
-			case LONG:
-				if (value != null && value.getClass() == Long.class) {
-					e.putLong(key, (Long) value).commit();
-				}
-				break;
-			case STRING:
-				if (value != null && value.getClass() == String.class) {
-					e.putString(key, (String) value).commit();
-				}
-
-				break;
-			case STRINGSET:
-				if (value != null && value.getClass() == Set.class) {
-					Set<?> set = (Set<?>) value;
-					if (!set.isEmpty()) {
-						Iterator<?> it = set.iterator();
-						if (it != null && it.next() != null
-								&& it.next().getClass() == String.class) {
-							e.putStringSet(key, (Set<String>) value).commit();
-						}
-					}
-				}
-				break;
-			default:
-				break;
-			}
-		}
-		return this;
-	}
-
-	@SuppressLint("CommitPrefEdits")
-	public SharedPreferencesWrapper remove(String key) {
-		Editor e = this.edit();
-		if (e != null) {
-			e.remove(key);
-		}
-		return this;
-	}
-
-	@SuppressLint("CommitPrefEdits")
-	public SharedPreferencesWrapper clear() {
-		Editor e = this.edit();
-		if (e != null) {
-			e.clear();
-		}
-		return this;
-	}
-
-	public boolean commit() {
-		boolean result = false;
-		Editor e = this.edit();
-		if (e != null) {
-			result = e.commit();
-		}
-		return result;
-	}
-
-	public void apply() {
-		Editor e = this.edit();
-		if (e != null) {
-			e.apply();
-		}
-	}
-
+    @Override
+    public void unregisterOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener listener) {
+        this.sharedPreferences.unregisterOnSharedPreferenceChangeListener(listener);
+    }
 }
